@@ -23,10 +23,31 @@ App = {
     return await App.initWeb3();
   },
 
+  // First, we check to see if we're using a modern dapp browser or recent versiion of MetaMask, where an 'ethereum' provider is injected
+  // into the window object. If so, we use it to create our web3 oject, but also must explicitly request access to the accounts with 
+  // ethereum.enable();
   initWeb3: async function() {
-    /*
-     * Replace me...
-     */
+    if (window.ethereum) {
+      App.web3Provider = window.ethereum;
+      try {
+        // Request account access
+        await window.ethereum.enable();
+      } catch (error) {
+        // User denied account access...
+        console.error("User denied account access")
+      }
+    }
+    // Legacy dapp browsers...
+    // If ethereum object doesn't exist, er check for an injected web3 instance. If it does exist, we are using an older dapp browser. We
+    // must get its provider and use it to create our web3 object.
+    else if (window.web3) {
+      App.web3Provider = window.web3.currentProvider;
+    }
+    // If no injected web3 instance is detected, fall back to Ganache and create our web3 object based on our local provider.
+    // This fallback is fine for development environments, but insecure and not suitable for production.
+    else {
+      App.web3Provider = new Web3.providers.HttpProvider
+    }
 
     return App.initContract();
   },
