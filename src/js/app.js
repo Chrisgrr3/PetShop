@@ -13,7 +13,7 @@ App = {
         petTemplate.find('img').attr('src', data[i].picture);
         petTemplate.find('.pet-breed').text(data[i].breed);
         petTemplate.find('.pet-age').text(data[i].age);
-        petTemplate.find('.pet-location').text(data[i].location);
+        petTemplate.find('].pet-location').text(data[i].location);
         petTemplate.find('.btn-adopt').attr('data-id', data[i].id);
 
         petsRow.append(petTemplate.html());
@@ -52,10 +52,21 @@ App = {
     return App.initContract();
   },
 
+  // Now we must instantiate our smart contract so that web3 knows where to find it and how it works. The Truffle library called 
+  // @truffle/contract keeps information about the contract in sync with migrations, so you don't need to change the contract's deployed
+  // address manually.
   initContract: function() {
-    /*
-     * Replace me...
-     */
+    $.getJSON('Adoption.json', function(data) {
+      // This gets the necessary contract artifact file and instantiates it with @truffle/contract
+      var AdoptionArtifact = data;
+      App.contracts.Adoption = TruffleContract(AdoptionArtifact);
+
+      // Set the provider for our contract
+      App.contracts.Adoption.setProvider(App.web3Provider);
+
+      // Use our contract to retrieve and mark the adopted pets
+      return App.markAdopted();
+    })
 
     return App.bindEvents();
   },
@@ -65,9 +76,21 @@ App = {
   },
 
   markAdopted: function() {
-    /*
-     * Replace me...
-     */
+    var adoptionInstance;
+
+    App.contracts.Adoption.deployed().then(function(instance) {
+      adoptionInstance = instance;
+
+      return adoptionInstance.getAdopters.call();
+    }).then(function(adopters) {
+      for (i = 0; i < adopters.length; i++) {
+        if (adopters[i] !== '0x0000000000000000000000000000000000000000') {
+          $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
+        }
+      }
+    }).catch(function(err) {
+      console.log(err.message)
+    });
   },
 
   handleAdopt: function(event) {
